@@ -1,5 +1,6 @@
 package com.example.karo.ui.rooms;
 
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
@@ -15,6 +16,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.example.karo.HomeActivity;
 import com.example.karo.R;
+import com.example.karo.RoomActivity;
 import com.example.karo.adapter.RoomsAdapter;
 import com.example.karo.adapter.RoomsAdapter.ISendStateToRoom;
 import com.example.karo.model.Room;
@@ -235,7 +237,14 @@ public class RoomsFragment extends Fragment implements ISendStateToRoom {
             }
             return null;
         }).addOnSuccessListener(aVoid -> {
-
+            // join room
+            if (state == Const.PLAYER_STATE_JOIN_ROOM) {
+                Intent intent = new Intent(getContext(), RoomActivity.class);
+                Bundle bundle = new Bundle();
+                bundle.putString(Const.KEY_ROOM_DOCUMENT, roomDocument);
+                intent.putExtras(bundle);
+                getContext().startActivity(intent);
+            }
         }).addOnFailureListener(e -> CommonLogic.makeToast(getContext(), "Send state failure: " + e.getMessage()));
     }
 

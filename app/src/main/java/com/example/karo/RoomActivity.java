@@ -331,6 +331,8 @@ public class RoomActivity extends AppCompatActivity {
     }
 
     private void handleNewRoomState(Room oldRoom, Room newRoom) {
+        // update room
+        room = newRoom;
         // if first player is current user
         if (currentUser.getEmail().equals(newRoom.getPlayerRoleXEmail())) {
             // check room creation with existed opponent (null => 0&0)
@@ -389,8 +391,6 @@ public class RoomActivity extends AppCompatActivity {
         }
         // inflate component view
         inflateLayout();
-        // update room
-        room = newRoom;
     }
 
     private void loadOpponentPlayerInfo(String opponentEmail) {

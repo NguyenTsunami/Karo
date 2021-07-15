@@ -33,12 +33,12 @@ public class RoomsAdapter extends RecyclerView.Adapter<RoomsAdapter.ViewHolder> 
 
     public void addData(RoomDetail roomDetail) {
         this.rooms.add(roomDetail);
-        notifyDataSetChanged();
+        notifyItemInserted(rooms.size() - 1);
     }
 
     public void removeData(int position) {
         this.rooms.remove(position);
-        notifyDataSetChanged();
+        notifyItemRemoved(position);
     }
 
     public void changeData(RoomDetail roomDetail, int position) {
@@ -51,7 +51,7 @@ public class RoomsAdapter extends RecyclerView.Adapter<RoomsAdapter.ViewHolder> 
             this.rooms.get(position).setRoom(roomDetail.getRoom());
             this.rooms.get(position).setUserRoleX(roomDetail.getUserRoleX());
             this.rooms.get(position).setUserRoleO(roomDetail.getUserRoleO());
-            notifyDataSetChanged();
+            notifyItemChanged(position);
         } else if (oldRoom.getPlayerRoleOState() != newRoom.getPlayerRoleOState()
                 && (oldRoom.getPlayerRoleOState() == Const.PLAYER_STATE_NONE
                 || newRoom.getPlayerRoleOState() == Const.PLAYER_STATE_NONE)) {
@@ -59,7 +59,7 @@ public class RoomsAdapter extends RecyclerView.Adapter<RoomsAdapter.ViewHolder> 
             this.rooms.get(position).setRoom(roomDetail.getRoom());
             this.rooms.get(position).setUserRoleX(roomDetail.getUserRoleX());
             this.rooms.get(position).setUserRoleO(roomDetail.getUserRoleO());
-            notifyDataSetChanged();
+            notifyItemChanged(position);
         }
     }
 
