@@ -43,4 +43,7 @@ public class Const {
     public static final String TOKEN_X = "X";
     public static final String TOKEN_O = "O";
     public static final String TOKEN_BLANK = "";
+    public static final int ADAPTER_STATE_INSERTED_DATA = 1;
+    public static final int ADAPTER_STATE_REMOVED_DATA = -1;
+    public static final int ADAPTER_STATE_CHANGED_DATA = 0;
 }

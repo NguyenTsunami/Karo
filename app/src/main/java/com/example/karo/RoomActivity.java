@@ -13,6 +13,7 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.GridView;
 import android.widget.ImageView;
+import android.widget.SearchView;
 import android.widget.TextView;
 
 import com.example.karo.adapter.GameBoardAdapter;
@@ -155,6 +156,7 @@ public class RoomActivity extends AppCompatActivity {
     }
 
     private void loadRoomState() {
+
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         DocumentReference roomDocRef = db.collection(Const.COLLECTION_ROOMS).document(roomDocument);
         roomListenerRegistration = roomDocRef.addSnapshotListener((snapshot, error) -> {
@@ -166,16 +168,16 @@ public class RoomActivity extends AppCompatActivity {
                 // get new room
                 Map<String, Object> map = snapshot.getData();
                 String playerRoleXEmail = null;
-                String playerRoleYEmail = null;
+                String playerRoleOEmail = null;
                 if (map.get(Const.KEY_PLAYER_ROLE_X_EMAIL) != null) {
                     playerRoleXEmail = map.get(Const.KEY_PLAYER_ROLE_X_EMAIL).toString();
                 }
                 if (map.get(Const.KEY_PLAYER_ROLE_O_EMAIL) != null) {
-                    playerRoleYEmail = map.get(Const.KEY_PLAYER_ROLE_O_EMAIL).toString();
+                    playerRoleOEmail = map.get(Const.KEY_PLAYER_ROLE_O_EMAIL).toString();
                 }
                 Room newRoom = new Room(
                         playerRoleXEmail,
-                        playerRoleYEmail,
+                        playerRoleOEmail,
                         Integer.parseInt(map.get(Const.KEY_PLAYER_ROLE_X_STATE).toString()),
                         Integer.parseInt(map.get(Const.KEY_PLAYER_ROLE_O_STATE).toString()),
                         Integer.parseInt(map.get(Const.KEY_PICK_CELL).toString())

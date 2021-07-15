@@ -55,8 +55,8 @@ public class RanksFragment extends Fragment {
                              ViewGroup container, Bundle savedInstanceState) {
         View root = inflater.inflate(R.layout.fragment_ranks, container, false);
 
-        // get list user
-        users = loadUserList();
+        // load list user
+        loadUserList();
 
         // setup btn
         txtSearchName = root.findViewById(R.id.txtSearchName);
@@ -143,7 +143,7 @@ public class RanksFragment extends Fragment {
         }
     }
 
-    public ArrayList<User> loadUserList() {
+    public void loadUserList() {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         FirebaseStorage storage = FirebaseStorage.getInstance();
         StorageReference storageRef = storage.getReference();
@@ -195,7 +195,6 @@ public class RanksFragment extends Fragment {
                 }
             }
         });
-        return users;
     }
 
     @Override
