@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/navigation_ranks"
+        android:icon="@drawable/icon_rank"
+        android:title="@string/title_ranks" />
+
+    <item
+        android:id="@+id/navigation_rooms"
+        android:icon="@drawable/icon_room"
+        android:title="@string/title_rooms" />
+
+    <item
+        android:id="@+id/navigation_invitations"
+        android:icon="@drawable/icon_invitation"
+        android:title="@string/title_invitations" />
+
+</menu>

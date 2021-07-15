@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Karo</string>
+    <string name="title_activity_home">HomeActivity</string>
+    <string name="title_ranks">Ranks</string>
+    <string name="title_rooms">Rooms</string>
+    <string name="title_invitations">Invitations</string>
+</resources>

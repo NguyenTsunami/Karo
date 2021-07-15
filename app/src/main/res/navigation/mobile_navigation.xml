@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/mobile_navigation"
+    app:startDestination="@+id/navigation_ranks">
+
+    <fragment
+        android:id="@+id/navigation_ranks"
+        android:name="com.example.karo.ui.ranks.RanksFragment"
+        android:label="@string/title_ranks"
+        tools:layout="@layout/fragment_ranks" />
+
+    <fragment
+        android:id="@+id/navigation_rooms"
+        android:name="com.example.karo.ui.rooms.RoomsFragment"
+        android:label="@string/title_rooms"
+        tools:layout="@layout/fragment_rooms" />
+
+    <fragment
+        android:id="@+id/navigation_invitations"
+        android:name="com.example.karo.ui.invitations.InvitationsFragment"
+        android:label="@string/title_invitations"
+        tools:layout="@layout/fragment_invitations" />
+</navigation>
