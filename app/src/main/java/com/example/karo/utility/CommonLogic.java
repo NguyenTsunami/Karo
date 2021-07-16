@@ -1,5 +1,6 @@
 package com.example.karo.utility;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.ContextWrapper;
 import android.content.Intent;
@@ -12,8 +13,12 @@ import com.example.karo.HomeActivity;
 import com.example.karo.MainActivity;
 import com.example.karo.model.Cell;
 import com.example.karo.model.User;
+import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.AuthResult;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.storage.FirebaseStorage;
@@ -49,6 +54,7 @@ public class CommonLogic {
                         if (querySnapshot != null && querySnapshot.size() > 0) {
                             Map<String, Object> map = querySnapshot.getDocuments().get(0).getData();
                             if (map != null) {
+                                // get data of current user
                                 User user = new User(
                                         Objects.requireNonNull(map.get(Const.KEY_EMAIL)).toString()
                                         , Objects.requireNonNull(map.get(Const.KEY_PASSWORD)).toString()
@@ -56,7 +62,22 @@ public class CommonLogic {
                                         , Objects.requireNonNull(map.get(Const.KEY_AVATAR_REF)).toString()
                                         , Integer.parseInt(Objects.requireNonNull(map.get(Const.KEY_SCORE)).toString())
                                 );
-                                gotoHomeScreen(context, user, querySnapshot.getDocuments().get(0).getId());
+
+                                // authenticate
+                                FirebaseAuth mAuth = FirebaseAuth.getInstance();
+                                mAuth.signInWithEmailAndPassword(email, password)
+                                        .addOnCompleteListener(new OnCompleteListener<AuthResult>() {
+                                            @Override
+                                            public void onComplete(Task<AuthResult> task) {
+                                                if (task.isSuccessful()) {
+                                                    // Sign in success, go to home screen
+                                                    gotoHomeScreen(context, user, querySnapshot.getDocuments().get(0).getId());
+                                                } else {
+                                                    // If sign in fails, display a message to the user.
+                                                    CommonLogic.makeToast(context, "Login fail!");
+                                                }
+                                            }
+                                        });
                             }
                         } else {
                             if (modeLogin == Const.MODE_LOGIN_FROM_INPUT) {
@@ -92,9 +113,7 @@ public class CommonLogic {
                                     (avatarBitmap, context.getApplicationContext(), Const.CURRENT_USER_AVATAR_FILE_NAME));
                     editor.commit();
                 })
-                .addOnFailureListener(e -> {
-                    CommonLogic.makeToast(context, "Error: " + e.getMessage());
-                });
+                .addOnFailureListener(e -> CommonLogic.makeToast(context, "Error: " + e.getMessage()));
 
         // intent to HomeActivity
         Intent intent = new Intent(context, HomeActivity.class);
@@ -130,23 +149,14 @@ public class CommonLogic {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         db.collection(Const.COLLECTION_ROOMS).document(roomDocument)
                 .delete()
-                .addOnSuccessListener(new OnSuccessListener<Void>() {
-                    @Override
-                    public void onSuccess(Void aVoid) {
+                .addOnSuccessListener(aVoid -> {
 
-                    }
                 })
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(Exception e) {
-                        makeToast(context, "Error: " + e.getMessage());
-                    }
-                });
+                .addOnFailureListener(e -> makeToast(context, "Error: " + e.getMessage()));
     }
 
     public static Bitmap loadImageFromInternalStorage(String imagePath) {
-        Bitmap bitmap = BitmapFactory.decodeFile(imagePath);
-        return bitmap;
+        return BitmapFactory.decodeFile(imagePath);
     }
 
     public static void makeToast(Context context, String string) {
@@ -166,11 +176,11 @@ public class CommonLogic {
     }
 
     public static int max(int a, int b) {
-        return (a > b) ? a : b;
+        return Math.max(a, b);
     }
 
     public static int min(int a, int b) {
-        return (a < b) ? a : b;
+        return Math.min(a, b);
     }
 
     public static boolean isFullBoardGame(ArrayList<Cell> cells) {

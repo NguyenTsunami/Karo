@@ -198,8 +198,6 @@ public class RoomActivity extends AppCompatActivity {
                 else if (room.getPickCell() != newRoom.getPickCell()) {
                     handleReceivePickCell(newRoom.getPickCell());
                 }
-            } else {
-                CommonLogic.makeToast(getApplicationContext(), "Load room data: null");
             }
         });
     }
@@ -362,9 +360,9 @@ public class RoomActivity extends AppCompatActivity {
                 gameBoardAdapter.clearCells();
                 sendIndexNotifyNewBoardGame();
             }
-            // check opponent out room (!null => 0&-1)
+            // check opponent out room (!null => 1&-1)
             else if (oldRoom != null
-                    && newRoom.getPlayerRoleXState() == Const.PLAYER_STATE_JOIN_ROOM
+                    && newRoom.getPlayerRoleXState() == Const.PLAYER_STATE_READY
                     && newRoom.getPlayerRoleOState() == Const.PLAYER_STATE_NONE) {
                 notifyOpponentOutRoom();
             }
@@ -396,9 +394,9 @@ public class RoomActivity extends AppCompatActivity {
                 gameBoardAdapter.clearCells();
                 sendIndexNotifyNewBoardGame();
             }
-            // check opponent out room (!null => 0&-1)
+            // check opponent out room (!null => 1&-1)
             else if (oldRoom != null
-                    && newRoom.getPlayerRoleOState() == Const.PLAYER_STATE_JOIN_ROOM
+                    && newRoom.getPlayerRoleOState() == Const.PLAYER_STATE_READY
                     && newRoom.getPlayerRoleXState() == Const.PLAYER_STATE_NONE) {
                 notifyOpponentOutRoom();
             }
@@ -414,7 +412,7 @@ public class RoomActivity extends AppCompatActivity {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setIcon(R.drawable.karo);
         builder.setCancelable(false);
-        builder.setTitle("Hmmm...");
+        builder.setTitle("Oops!");
         builder.setMessage("Opponent left room :((");
         builder.setPositiveButton("OK", (dialog, which) -> {
             // back to state 0
@@ -519,7 +517,6 @@ public class RoomActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        super.onBackPressed();
         confirmOutRoom();
     }
 

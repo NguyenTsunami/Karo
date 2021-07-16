@@ -23,6 +23,7 @@ import androidx.navigation.ui.NavigationUI;
 import com.example.karo.model.User;
 import com.example.karo.utility.Const;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.firebase.auth.FirebaseAuth;
 
 public class HomeActivity extends AppCompatActivity {
 
@@ -136,6 +137,8 @@ public class HomeActivity extends AppCompatActivity {
     }
 
     private void handleSignOut() {
+        // un-authenticate
+        FirebaseAuth.getInstance().signOut();
         // remove from cache
         SharedPreferences prefs = getSharedPreferences(Const.XML_NAME_CURRENT_USER, MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();

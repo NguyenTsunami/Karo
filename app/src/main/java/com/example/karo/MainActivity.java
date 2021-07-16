@@ -23,6 +23,10 @@ import androidx.core.content.ContextCompat;
 import com.example.karo.model.User;
 import com.example.karo.utility.CommonLogic;
 import com.example.karo.utility.Const;
+import com.google.android.gms.tasks.OnCompleteListener;
+import com.google.android.gms.tasks.Task;
+import com.google.firebase.auth.AuthResult;
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
 
@@ -183,14 +187,28 @@ public class MainActivity extends AppCompatActivity {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         db.collection(Const.COLLECTION_USERS).add(user)
                 .addOnSuccessListener(documentReference -> {
-                    currentUserDocument = documentReference.getId();
-                    AlertDialog.Builder builder = new AlertDialog.Builder(context);
-                    builder.setTitle("Whoohoo!");
-                    builder.setMessage("Registered successfully!");
-                    builder.setIcon(R.drawable.karo);
-                    builder.setCancelable(false);
-                    builder.setPositiveButton("Let's go", (dialog, which) -> CommonLogic.gotoHomeScreen(this, user, currentUserDocument));
-                    builder.show();
+                    FirebaseAuth mAuth = FirebaseAuth.getInstance();
+                    mAuth.createUserWithEmailAndPassword(user.getEmail(), user.getPassword())
+                            .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
+                                @Override
+                                public void onComplete(Task<AuthResult> task) {
+                                    if (task.isSuccessful()) {
+                                        // Sign up success
+                                        currentUserDocument = documentReference.getId();
+                                        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                                        builder.setTitle("Whoohoo!");
+                                        builder.setMessage("Registered successfully!");
+                                        builder.setIcon(R.drawable.karo);
+                                        builder.setCancelable(false);
+                                        builder.setPositiveButton("Let's go",
+                                                (dialog, which) -> CommonLogic.gotoHomeScreen(getApplicationContext(), user, currentUserDocument));
+                                        builder.show();
+                                    } else {
+                                        // If sign up fails, display a message to the user.
+                                        CommonLogic.makeToast(getApplicationContext(), "Error: " + task.getException());
+                                    }
+                                }
+                            });
                 })
                 .addOnFailureListener(e -> CommonLogic.makeToast(this, "Error: " + e));
     }

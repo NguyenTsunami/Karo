@@ -16,6 +16,8 @@ import android.view.WindowManager;
 import com.example.karo.model.User;
 import com.example.karo.utility.CommonLogic;
 import com.example.karo.utility.Const;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.storage.FirebaseStorage;
@@ -42,13 +44,13 @@ public class SplashActivity extends AppCompatActivity {
         new Handler().postDelayed(new Runnable() {
             @Override
             public void run() {
-                // Check data in cache
-                SharedPreferences prefs = getSharedPreferences(Const.XML_NAME_CURRENT_USER, MODE_PRIVATE);
-                String email = prefs.getString(Const.KEY_EMAIL, "");
-                String password = prefs.getString(Const.KEY_PASSWORD, "");
-                if (email.isEmpty() || password.isEmpty()) {
+                FirebaseUser currentUser = FirebaseAuth.getInstance().getCurrentUser();
+                if (currentUser == null) {
                     CommonLogic.gotoLoginScreen(getApplicationContext());
                 } else {
+                    SharedPreferences prefs = getSharedPreferences(Const.XML_NAME_CURRENT_USER, MODE_PRIVATE);
+                    String email = prefs.getString(Const.KEY_EMAIL, "");
+                    String password = prefs.getString(Const.KEY_PASSWORD, "");
                     CommonLogic.handleSignIn(getApplicationContext(), email, password, Const.MODE_LOGIN_FROM_CACHE);
                 }
             }
