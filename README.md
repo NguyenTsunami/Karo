@@ -4,4 +4,4 @@ Android - Firebase - PRM391
 - Clone my project
 - Connect Cloud FireStore
 - Connect Storage Firebase
-- Accept permission (when you need to upload avatar)
+- Connect Authentication Firebase
