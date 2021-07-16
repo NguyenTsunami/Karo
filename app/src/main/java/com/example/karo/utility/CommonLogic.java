@@ -12,6 +12,8 @@ import com.example.karo.HomeActivity;
 import com.example.karo.MainActivity;
 import com.example.karo.model.Cell;
 import com.example.karo.model.User;
+import com.google.android.gms.tasks.OnFailureListener;
+import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.storage.FirebaseStorage;
@@ -54,7 +56,7 @@ public class CommonLogic {
                                         , Objects.requireNonNull(map.get(Const.KEY_AVATAR_REF)).toString()
                                         , Integer.parseInt(Objects.requireNonNull(map.get(Const.KEY_SCORE)).toString())
                                 );
-                                goHome(context, user, querySnapshot.getDocuments().get(0).getId());
+                                gotoHomeScreen(context, user, querySnapshot.getDocuments().get(0).getId());
                             }
                         } else {
                             if (modeLogin == Const.MODE_LOGIN_FROM_INPUT) {
@@ -67,7 +69,7 @@ public class CommonLogic {
                 });
     }
 
-    public static void goHome(Context context, User user, String currentUserDocument) {
+    public static void gotoHomeScreen(Context context, User user, String currentUserDocument) {
         // Save data login into cache
         SharedPreferences prefs = context.getSharedPreferences(Const.XML_NAME_CURRENT_USER, context.MODE_PRIVATE);
         SharedPreferences.Editor editor = prefs.edit();
@@ -122,6 +124,24 @@ public class CommonLogic {
             }
         }
         return imgFile.getAbsolutePath();
+    }
+
+    public static void deleteRoom(Context context, String roomDocument) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        db.collection(Const.COLLECTION_ROOMS).document(roomDocument)
+                .delete()
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void aVoid) {
+
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(Exception e) {
+                        makeToast(context, "Error: " + e.getMessage());
+                    }
+                });
     }
 
     public static Bitmap loadImageFromInternalStorage(String imagePath) {

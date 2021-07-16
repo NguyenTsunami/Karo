@@ -2,10 +2,6 @@ package com.example.karo;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.Intent;
-import android.content.SharedPreferences;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.transition.Scene;
 import android.transition.Slide;
@@ -18,7 +14,6 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
@@ -30,12 +25,8 @@ import com.example.karo.utility.CommonLogic;
 import com.example.karo.utility.Const;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
-import com.google.firebase.storage.FirebaseStorage;
-import com.google.firebase.storage.StorageReference;
 
-import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -58,7 +49,7 @@ public class MainActivity extends AppCompatActivity {
         // Hide action bar
         Objects.requireNonNull(getSupportActionBar()).hide();
 
-        // Change color of status bar
+        // Change color of status bar and nav bar
         Window window = getWindow();
 
         // clear FLAG_TRANSLUCENT_STATUS flag:
@@ -69,6 +60,7 @@ public class MainActivity extends AppCompatActivity {
 
         // finally change the color
         window.setStatusBarColor(ContextCompat.getColor(this, R.color.white));
+        window.setNavigationBarColor(ContextCompat.getColor(this, R.color.white));
 
         // Setup first scene
         layoutLoginModule = findViewById(R.id.layoutLoginModule);
@@ -197,7 +189,7 @@ public class MainActivity extends AppCompatActivity {
                     builder.setMessage("Registered successfully!");
                     builder.setIcon(R.drawable.karo);
                     builder.setCancelable(false);
-                    builder.setPositiveButton("Let's go", (dialog, which) -> CommonLogic.goHome(this, user, currentUserDocument));
+                    builder.setPositiveButton("Let's go", (dialog, which) -> CommonLogic.gotoHomeScreen(this, user, currentUserDocument));
                     builder.show();
                 })
                 .addOnFailureListener(e -> CommonLogic.makeToast(this, "Error: " + e));

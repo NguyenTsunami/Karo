@@ -13,7 +13,6 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.GridView;
 import android.widget.ImageView;
-import android.widget.SearchView;
 import android.widget.TextView;
 
 import com.example.karo.adapter.GameBoardAdapter;
@@ -146,8 +145,14 @@ public class RoomActivity extends AppCompatActivity {
             // send state
             if (currentUser.getEmail().equals(room.getPlayerRoleXEmail())) {
                 transaction.update(roomRef, Const.KEY_PLAYER_ROLE_X_STATE, state);
+                if (state == Const.PLAYER_STATE_NONE) {
+                    transaction.update(roomRef, Const.KEY_PLAYER_ROLE_X_EMAIL, null);
+                }
             } else {
                 transaction.update(roomRef, Const.KEY_PLAYER_ROLE_O_STATE, state);
+                if (state == Const.PLAYER_STATE_NONE) {
+                    transaction.update(roomRef, Const.KEY_PLAYER_ROLE_O_EMAIL, null);
+                }
             }
             return null;
         }).addOnSuccessListener(aVoid -> {
@@ -347,7 +352,7 @@ public class RoomActivity extends AppCompatActivity {
                 setRoleImageForPlayers();
                 loadOpponentPlayerInfo(newRoom.getPlayerRoleOEmail());
             }
-            // check state start game
+            // check state start game (0&1/1&0/0&0 => 1&1)
             else if (oldRoom != null
                     && (oldRoom.getPlayerRoleXState() == Const.PLAYER_STATE_JOIN_ROOM
                     || oldRoom.getPlayerRoleOState() == Const.PLAYER_STATE_JOIN_ROOM)
@@ -356,6 +361,12 @@ public class RoomActivity extends AppCompatActivity {
                 whoseTurn = Const.TOKEN_X;
                 gameBoardAdapter.clearCells();
                 sendIndexNotifyNewBoardGame();
+            }
+            // check opponent out room (!null => 0&-1)
+            else if (oldRoom != null
+                    && newRoom.getPlayerRoleXState() == Const.PLAYER_STATE_JOIN_ROOM
+                    && newRoom.getPlayerRoleOState() == Const.PLAYER_STATE_NONE) {
+                notifyOpponentOutRoom();
             }
             // change state of players
             currentUserState = newRoom.getPlayerRoleXState();
@@ -375,7 +386,7 @@ public class RoomActivity extends AppCompatActivity {
                 setRoleImageForPlayers();
                 loadOpponentPlayerInfo(newRoom.getPlayerRoleXEmail());
             }
-            // check state start game
+            // check state start game (0&1/1&0/0&0 => 1&1)
             else if (oldRoom != null
                     && (oldRoom.getPlayerRoleXState() == Const.PLAYER_STATE_JOIN_ROOM
                     || oldRoom.getPlayerRoleOState() == Const.PLAYER_STATE_JOIN_ROOM)
@@ -385,12 +396,31 @@ public class RoomActivity extends AppCompatActivity {
                 gameBoardAdapter.clearCells();
                 sendIndexNotifyNewBoardGame();
             }
+            // check opponent out room (!null => 0&-1)
+            else if (oldRoom != null
+                    && newRoom.getPlayerRoleOState() == Const.PLAYER_STATE_JOIN_ROOM
+                    && newRoom.getPlayerRoleXState() == Const.PLAYER_STATE_NONE) {
+                notifyOpponentOutRoom();
+            }
             // change state of players
             currentUserState = newRoom.getPlayerRoleOState();
             opponentUserState = newRoom.getPlayerRoleXState();
         }
         // inflate component view
         inflateLayout();
+    }
+
+    private void notifyOpponentOutRoom() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setIcon(R.drawable.karo);
+        builder.setCancelable(false);
+        builder.setTitle("Hmmm...");
+        builder.setMessage("Opponent left room :((");
+        builder.setPositiveButton("OK", (dialog, which) -> {
+            // back to state 0
+            sendState(Const.PLAYER_STATE_JOIN_ROOM);
+        });
+        builder.show();
     }
 
     private void loadOpponentPlayerInfo(String opponentEmail) {
@@ -485,5 +515,43 @@ public class RoomActivity extends AppCompatActivity {
                 layoutOpponentScreen.addView(viewOpponentInfo);
             }
         }
+    }
+
+    @Override
+    public void onBackPressed() {
+        super.onBackPressed();
+        confirmOutRoom();
+    }
+
+    private void confirmOutRoom() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setIcon(R.drawable.karo);
+        builder.setTitle("Wait!");
+        builder.setMessage("Do you really want to left room???");
+        builder.setNegativeButton("No", (dialog, which) -> {
+
+        });
+        builder.setPositiveButton("Yes", (dialog, which) -> {
+            handleOutRoom();
+        });
+        builder.show();
+    }
+
+    private void handleOutRoom() {
+        // if room have only one player (current user)
+        if (opponentUserState == Const.PLAYER_STATE_NONE) {
+            // stop listen
+            roomListenerRegistration.remove();
+            // delete room
+            CommonLogic.deleteRoom(this, roomDocument);
+        }
+        // if opponent in room
+        else {
+            // back to state -1
+            sendState(Const.PLAYER_STATE_NONE);
+        }
+        // come back to home screen
+        Intent intent = new Intent(this, HomeActivity.class);
+        startActivity(intent);
     }
 }
