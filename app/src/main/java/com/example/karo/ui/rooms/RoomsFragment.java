@@ -248,4 +248,10 @@ public class RoomsFragment extends Fragment implements ISendStateToRoom {
         }).addOnFailureListener(e -> CommonLogic.makeToast(getContext(), "Send state failure: " + e.getMessage()));
     }
 
+    @Override
+    public void onDetach() {
+        listenerRegistration.remove();
+        super.onDetach();
+    }
+
 }
