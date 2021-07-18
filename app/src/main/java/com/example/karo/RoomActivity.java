@@ -117,7 +117,15 @@ public class RoomActivity extends AppCompatActivity {
     }
 
     private void setupBoardGameAdapter() {
-        createGameBoard();
+        ArrayList<Cell> cells = new ArrayList<>();
+        for (int i = 0; i < Const.ROW_SIZE; i++) {
+            for (int j = 0; j < Const.COLUMN_SIZE; j++) {
+                cells.add(new Cell(Const.TOKEN_BLANK));
+            }
+        }
+        gameBoardAdapter = new GameBoardAdapter(this, cells, roomDocument);
+        gridviewBoardGame = viewGameBoard.findViewById(R.id.gridviewBoardGame);
+        gridviewBoardGame.setAdapter(gameBoardAdapter);
     }
 
     private void loadCurrentPlayerInfo() {
@@ -129,11 +137,11 @@ public class RoomActivity extends AppCompatActivity {
         String avatarRef = prefs.getString(Const.KEY_AVATAR_REF, "");
         int score = prefs.getInt(Const.KEY_SCORE, 0);
         currentUser = new User(email, password, username, avatarRef, score);
-        String currentUserAvatarPath = prefs.getString(Const.KEY_CURRENT_USER_AVATAR_PATH, "");
 
         // load avatar
-        Bitmap avatarBitmap = CommonLogic.loadImageFromInternalStorage(currentUserAvatarPath);
-        imgCurrentPlayerAvatar.setImageBitmap(avatarBitmap);
+        Bitmap bitmap = CommonLogic.loadImageFromInternalStorage(
+                Const.AVATARS_SOURCE_INTERNAL_PATH + currentUser.getAvatarRef());
+        imgCurrentPlayerAvatar.setImageBitmap(bitmap);
 
         // upload username
         txtCurrentPlayerName.setText(currentUser.getUsername());
@@ -165,7 +173,6 @@ public class RoomActivity extends AppCompatActivity {
     }
 
     private void loadRoomState() {
-
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         DocumentReference roomDocRef = db.collection(Const.COLLECTION_ROOMS).document(roomDocument);
         roomListenerRegistration = roomDocRef.addSnapshotListener((snapshot, error) -> {
@@ -236,6 +243,7 @@ public class RoomActivity extends AppCompatActivity {
     }
 
     private void handleDraw() {
+        gameBoardAdapter.clearCells();
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setIcon(R.drawable.karo);
         builder.setCancelable(false);
@@ -273,7 +281,6 @@ public class RoomActivity extends AppCompatActivity {
             builder.setTitle("Whoohoo!");
             builder.setMessage("You won!");
         }
-
         builder.setPositiveButton("OK", (dialog, which) -> {
             // back to state 0
             sendState(Const.PLAYER_STATE_JOIN_ROOM);
@@ -337,18 +344,6 @@ public class RoomActivity extends AppCompatActivity {
             imgCurrentPlayerRole.setImageResource(R.drawable.icon_o);
             imgOpponentPlayerRole.setImageResource(R.drawable.icon_x);
         }
-    }
-
-    private void createGameBoard() {
-        ArrayList<Cell> cells = new ArrayList<>();
-        for (int i = 0; i < Const.ROW_SIZE; i++) {
-            for (int j = 0; j < Const.COLUMN_SIZE; j++) {
-                cells.add(new Cell(Const.TOKEN_BLANK));
-            }
-        }
-        gameBoardAdapter = new GameBoardAdapter(this, cells, roomDocument);
-        gridviewBoardGame = viewGameBoard.findViewById(R.id.gridviewBoardGame);
-        gridviewBoardGame.setAdapter(gameBoardAdapter);
     }
 
     private void handleNewRoomState(Room oldRoom, Room newRoom) {
@@ -463,19 +458,13 @@ public class RoomActivity extends AppCompatActivity {
                                         , Objects.requireNonNull(map.get(Const.KEY_AVATAR_REF)).toString()
                                         , Integer.parseInt(Objects.requireNonNull(map.get(Const.KEY_SCORE)).toString())
                                 );
-                                // load avatar
-                                StorageReference rootRef = FirebaseStorage.getInstance().getReference();
-                                StorageReference imgStorageRef = rootRef.child(opponentUser.getAvatarRef());
-                                imgStorageRef.getBytes(Const.MAX_DOWNLOAD_FILE_BYTE)
-                                        .addOnSuccessListener(bytes -> {
-                                            Bitmap avatarBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-                                            // load UI into view opponent info
-                                            imgOpponentPlayerAvatar.setImageBitmap(avatarBitmap);
-                                            txtOpponentPlayerName.setText(opponentUser.getUsername());
-                                            imgOpponentPlayerAvatar.setVisibility(View.VISIBLE);
-                                            txtOpponentPlayerName.setVisibility(View.VISIBLE);
-                                        })
-                                        .addOnFailureListener(e -> CommonLogic.makeToast(this, "Error: " + e.getMessage()));
+                                // load UI into view opponent info
+                                Bitmap bitmap = CommonLogic.loadImageFromInternalStorage(
+                                        Const.AVATARS_SOURCE_INTERNAL_PATH + opponentUser.getAvatarRef());
+                                imgOpponentPlayerAvatar.setImageBitmap(bitmap);
+                                txtOpponentPlayerName.setText(opponentUser.getUsername());
+                                imgOpponentPlayerAvatar.setVisibility(View.VISIBLE);
+                                txtOpponentPlayerName.setVisibility(View.VISIBLE);
                             }
                         } else {
                             CommonLogic.makeToast(this, "Error: Null user");
@@ -546,9 +535,7 @@ public class RoomActivity extends AppCompatActivity {
         builder.setNegativeButton("No", (dialog, which) -> {
 
         });
-        builder.setPositiveButton("Yes", (dialog, which) -> {
-            handleOutRoom();
-        });
+        builder.setPositiveButton("Yes", (dialog, which) -> handleOutRoom());
         builder.show();
     }
 

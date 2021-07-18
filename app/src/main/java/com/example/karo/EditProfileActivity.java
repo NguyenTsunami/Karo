@@ -46,7 +46,7 @@ public class EditProfileActivity extends AppCompatActivity {
     private ImageView imgCurrentAvatar;
     private boolean isChangeAvatar = false;
     private String currentUserDocument;
-    private String currentUserAvatarPath;
+    private String avatarRefPicked;
 
     public Activity getActivity() {
         return this;
@@ -67,7 +67,6 @@ public class EditProfileActivity extends AppCompatActivity {
         int score = prefs.getInt(Const.KEY_SCORE, 0);
         currentUser = new User(email, password, username, avatarRef, score);
         currentUserDocument = prefs.getString(Const.KEY_CURRENT_USER_DOCUMENT, "");
-        currentUserAvatarPath = prefs.getString(Const.KEY_CURRENT_USER_AVATAR_PATH, "");
 
         // get UI
         txtCurrentEmail = findViewById(R.id.txtCurrentEmail);
@@ -86,59 +85,19 @@ public class EditProfileActivity extends AppCompatActivity {
         progressBar.setVisibility(View.GONE);
 
         // load avatar
-        Bitmap avatarBitmap = CommonLogic.loadImageFromInternalStorage(currentUserAvatarPath);
-        imgCurrentAvatar.setImageBitmap(avatarBitmap);
+        Bitmap bitmap = CommonLogic.loadImageFromInternalStorage(
+                Const.AVATARS_SOURCE_INTERNAL_PATH + currentUser.getAvatarRef());
+        imgCurrentAvatar.setImageBitmap(bitmap);
 
         // set up button upload photo
         btnUploadPhoto.setOnClickListener(v -> {
-            Intent getIntent = new Intent(Intent.ACTION_GET_CONTENT);
-            getIntent.setType("image/*");
-
-            Intent pickIntent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
-            pickIntent.setType("image/*");
-
-            Intent chooserIntent = Intent.createChooser(getIntent, "Select Photo From:");
-            chooserIntent.putExtra(Intent.EXTRA_INITIAL_INTENTS, new Intent[]{pickIntent});
-
-            startActivityForResult(chooserIntent, Const.REQUEST_PICK_PHOTO);
+            Intent intent = new Intent(this, AvatarsActivity.class);
+            startActivityForResult(intent, Const.REQUEST_CHANGE_AVATAR);
         });
 
         // set up button save
         btnSave.setOnClickListener(v -> {
-            if (isChangeAvatar) {
-                // save image, then save username
-                imgCurrentAvatar.setDrawingCacheEnabled(true);
-                imgCurrentAvatar.buildDrawingCache();
-                Bitmap bitmap = ((BitmapDrawable) imgCurrentAvatar.getDrawable()).getBitmap();
-                ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-                Bitmap compressBitmap = Bitmap.createScaledBitmap
-                        (bitmap, Const.DESIRED_WIDTH_IMAGE, Const.DESIRED_HEIGHT_IMAGE, true);
-
-                // edit in cache
-                String newAvatarPath = CommonLogic.saveImageToInternalStorage
-                        (compressBitmap, getApplicationContext(), Const.CURRENT_USER_AVATAR_FILE_NAME);
-                SharedPreferences.Editor editor = prefs.edit();
-                editor.putString(Const.KEY_CURRENT_USER_AVATAR_PATH, newAvatarPath);
-                editor.commit();
-
-                // upload to firebase
-                compressBitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream);
-                byte[] data = outputStream.toByteArray();
-                StorageReference storageRef = FirebaseStorage.getInstance().getReference()
-                        .child("avatars/" + currentUserDocument);
-                UploadTask uploadTask = storageRef.putBytes(data);
-                uploadTask.addOnFailureListener(exception -> {
-                    // Handle unsuccessful uploads
-                }).addOnSuccessListener(taskSnapshot -> {
-                    currentUser.setAvatarRef(taskSnapshot.getMetadata().getPath());
-                    currentUser.setUsername(txtCurrentUsername.getText().toString());
-                    updateCurrentUser();
-                });
-            } else {
-                //save username
-                currentUser.setUsername(txtCurrentUsername.getText().toString());
-                updateCurrentUser();
-            }
+            updateCurrentUser();
         });
     }
 
@@ -148,17 +107,16 @@ public class EditProfileActivity extends AppCompatActivity {
         db.runTransaction((Transaction.Function<Void>) transaction -> {
             // update to firebase cloud
             if (isChangeAvatar) {
-                transaction.update(currentUserRef, Const.KEY_AVATAR_REF, currentUser.getAvatarRef());
-                String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
-                String keyBitmap = "bitmap_at_" + timeStamp;
-                transaction.update(currentUserRef, Const.KEY_AVATAR_BITMAP, keyBitmap);
+                transaction.update(currentUserRef, Const.KEY_AVATAR_REF, avatarRefPicked);
             }
-            transaction.update(currentUserRef, Const.KEY_USERNAME, currentUser.getUsername());
+            transaction.update(currentUserRef, Const.KEY_USERNAME, txtCurrentUsername.getText().toString());
             // update cache
             SharedPreferences prefs = getSharedPreferences(Const.XML_NAME_CURRENT_USER, MODE_PRIVATE);
             SharedPreferences.Editor editor = prefs.edit();
-            editor.putString(Const.KEY_AVATAR_REF, currentUser.getAvatarRef());
-            editor.putString(Const.KEY_USERNAME, currentUser.getUsername());
+            if (isChangeAvatar) {
+                editor.putString(Const.KEY_AVATAR_REF, avatarRefPicked);
+            }
+            editor.putString(Const.KEY_USERNAME, txtCurrentUsername.getText().toString());
             editor.commit();
             return null;
         }).addOnSuccessListener(aVoid -> {
@@ -178,25 +136,9 @@ public class EditProfileActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         if (resultCode == RESULT_OK) {
-            if (requestCode == Const.REQUEST_PICK_PHOTO) {
-                Uri selectedImage = data.getData();
-                String[] filePathColumn = {MediaStore.Images.Media.DATA};
-
-                Cursor cursor = getContentResolver().query(selectedImage,
-                        filePathColumn, null, null, null);
-                cursor.moveToFirst();
-
-                int columnIndex = cursor.getColumnIndex(filePathColumn[0]);
-                String picturePath = cursor.getString(columnIndex);
-                cursor.close();
-
-                if (picturePath != null) {
-                    Bitmap bitmap = BitmapFactory.decodeFile(picturePath);
-                    imgCurrentAvatar.setImageBitmap(bitmap);
-                    isChangeAvatar = true;
-                } else {
-                    CommonLogic.makeToast(this, "Error: Can not upload this photo! We will fix it soon, Sorry...");
-                }
+            if (requestCode == Const.REQUEST_CHANGE_AVATAR) {
+                // get avatarRef that user picked
+                // isChangeAvatar = false/true;
             }
         }
         super.onActivityResult(requestCode, resultCode, data);

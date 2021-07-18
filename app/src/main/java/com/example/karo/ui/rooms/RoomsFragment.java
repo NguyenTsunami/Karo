@@ -162,17 +162,11 @@ public class RoomsFragment extends Fragment implements ISendStateToRoom {
                                     );
 
                                     // get bitmap avatar
-                                    FirebaseStorage storage = FirebaseStorage.getInstance();
-                                    StorageReference storageRef = storage.getReference();
-                                    StorageReference avatarRef = storageRef.child(user.getAvatarRef());
-                                    avatarRef.getBytes(Const.MAX_DOWNLOAD_FILE_BYTE)
-                                            .addOnSuccessListener(bytes -> {
-                                                Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-                                                user.setAvatarBitmap(bitmap);
-                                                roomDetail.setUserRoleX(user);
-                                                loadUserRoleOInfo(roomDetail, stateChangeData);
-                                            })
-                                            .addOnFailureListener(e -> CommonLogic.makeToast(getContext(), "Error: " + e.getMessage()));
+                                    Bitmap bitmap = CommonLogic.loadImageFromInternalStorage(
+                                            Const.AVATARS_SOURCE_INTERNAL_PATH + user.getAvatarRef());
+                                    user.setAvatarBitmap(bitmap);
+                                    roomDetail.setUserRoleX(user);
+                                    loadUserRoleOInfo(roomDetail, stateChangeData);
                                 }
                             } else {
                                 CommonLogic.makeToast(getContext(), "Get user " + room.getPlayerRoleXEmail() + " fail!");
@@ -209,17 +203,11 @@ public class RoomsFragment extends Fragment implements ISendStateToRoom {
                                     );
 
                                     // get bitmap avatar
-                                    FirebaseStorage storage = FirebaseStorage.getInstance();
-                                    StorageReference storageRef = storage.getReference();
-                                    StorageReference avatarRef = storageRef.child(user.getAvatarRef());
-                                    avatarRef.getBytes(Const.MAX_DOWNLOAD_FILE_BYTE)
-                                            .addOnSuccessListener(bytes -> {
-                                                Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-                                                user.setAvatarBitmap(bitmap);
-                                                roomDetail.setUserRoleO(user);
-                                                adapter.setData(roomDetail, stateChangeData);
-                                            })
-                                            .addOnFailureListener(e -> CommonLogic.makeToast(getContext(), "Error: " + e.getMessage()));
+                                    Bitmap bitmap = CommonLogic.loadImageFromInternalStorage(
+                                            Const.AVATARS_SOURCE_INTERNAL_PATH + user.getAvatarRef());
+                                    user.setAvatarBitmap(bitmap);
+                                    roomDetail.setUserRoleO(user);
+                                    adapter.setData(roomDetail, stateChangeData);
                                 }
                             } else {
                                 CommonLogic.makeToast(getContext(), "Get user " + roomDetail.getRoom().getPlayerRoleXEmail() + " fail!");

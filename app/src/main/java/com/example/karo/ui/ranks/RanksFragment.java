@@ -145,54 +145,44 @@ public class RanksFragment extends Fragment {
 
     public void loadUserList() {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
-        FirebaseStorage storage = FirebaseStorage.getInstance();
-        StorageReference storageRef = storage.getReference();
         Query query = db.collection(Const.COLLECTION_USERS)
                 .orderBy(Const.KEY_SCORE, Query.Direction.DESCENDING);
-        listenerRegistration = query.addSnapshotListener(new EventListener<QuerySnapshot>() {
-            @Override
-            public void onEvent(@Nullable QuerySnapshot value, @Nullable FirebaseFirestoreException error) {
-                if (error != null) {
-                    CommonLogic.makeToast(getContext(), error.getMessage());
-                    return;
+        listenerRegistration = query.addSnapshotListener((value, error) -> {
+            if (error != null) {
+                CommonLogic.makeToast(getContext(), error.getMessage());
+                return;
+            }
+            // Get user list
+            int rank = 0;
+            int score = Integer.MAX_VALUE;
+            int count = 0;
+            users.clear();
+            for (QueryDocumentSnapshot document : value) {
+                count++;
+                Map<String, Object> map = document.getData();
+                User user = new User(
+                        Objects.requireNonNull(map.get(Const.KEY_EMAIL)).toString()
+                        , Objects.requireNonNull(map.get(Const.KEY_PASSWORD)).toString()
+                        , Objects.requireNonNull(map.get(Const.KEY_USERNAME)).toString()
+                        , Objects.requireNonNull(map.get(Const.KEY_AVATAR_REF)).toString()
+                        , Integer.parseInt(Objects.requireNonNull(map.get(Const.KEY_SCORE)).toString())
+                );
+
+                // set rank
+                if (user.getScore() < score) {
+                    rank = count;
+                    score = user.getScore();
                 }
-                // Get user list
-                int rank = 0;
-                int score = Integer.MAX_VALUE;
-                int count = 0;
-                users.clear();
-                for (QueryDocumentSnapshot document : value) {
-                    count++;
-                    Map<String, Object> map = document.getData();
-                    User user = new User(
-                            Objects.requireNonNull(map.get(Const.KEY_EMAIL)).toString()
-                            , Objects.requireNonNull(map.get(Const.KEY_PASSWORD)).toString()
-                            , Objects.requireNonNull(map.get(Const.KEY_USERNAME)).toString()
-                            , Objects.requireNonNull(map.get(Const.KEY_AVATAR_REF)).toString()
-                            , Integer.parseInt(Objects.requireNonNull(map.get(Const.KEY_SCORE)).toString())
-                    );
+                user.setRank(rank);
 
-                    // set rank
-                    if (user.getScore() < score) {
-                        rank = count;
-                        score = user.getScore();
-                    }
-                    user.setRank(rank);
+                // get bitmap avatar
+                Bitmap bitmap = CommonLogic.loadImageFromInternalStorage(
+                        Const.AVATARS_SOURCE_INTERNAL_PATH + user.getAvatarRef());
+                user.setAvatarBitmap(bitmap);
 
-                    // get bitmap avatar
-                    StorageReference avatarRef = storageRef.child(user.getAvatarRef());
-                    avatarRef.getBytes(Const.MAX_DOWNLOAD_FILE_BYTE)
-                            .addOnSuccessListener(bytes -> {
-                                Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-                                user.setAvatarBitmap(bitmap);
-                                loadRanks(txtSearchName.getText().toString());
-                            })
-                            .addOnFailureListener(e -> {
-                                CommonLogic.makeToast(getContext(), "Error: " + e.getMessage());
-                            });
-
-                    users.add(user);
-                }
+                // add to list
+                users.add(user);
+                loadRanks(txtSearchName.getText().toString());
             }
         });
     }

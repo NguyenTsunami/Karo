@@ -8,8 +8,6 @@ import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
-import android.widget.CheckBox;
-import android.widget.EditText;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AlertDialog;
@@ -30,6 +28,7 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.QuerySnapshot;
 import com.google.firebase.storage.FirebaseStorage;
+import com.google.firebase.storage.ListResult;
 import com.google.firebase.storage.StorageReference;
 
 import java.io.File;
@@ -76,16 +75,13 @@ public class CommonLogic {
                                 // authenticate
                                 FirebaseAuth mAuth = FirebaseAuth.getInstance();
                                 mAuth.signInWithEmailAndPassword(email, password)
-                                        .addOnCompleteListener(new OnCompleteListener<AuthResult>() {
-                                            @Override
-                                            public void onComplete(Task<AuthResult> task) {
-                                                if (task.isSuccessful()) {
-                                                    // Sign in success, go to home screen
-                                                    gotoHomeScreen(context, user, querySnapshot.getDocuments().get(0).getId());
-                                                } else {
-                                                    // If sign in fails, display a message to the user.
-                                                    CommonLogic.makeToast(context, "Login fail!");
-                                                }
+                                        .addOnCompleteListener(task1 -> {
+                                            if (task1.isSuccessful()) {
+                                                // Sign in success, go to home screen
+                                                gotoHomeScreen(context, user, querySnapshot.getDocuments().get(0).getId());
+                                            } else {
+                                                // If sign in fails, display a message to the user.
+                                                CommonLogic.makeToast(context, "Login fail!");
                                             }
                                         });
                             }
@@ -111,19 +107,6 @@ public class CommonLogic {
         editor.putInt(Const.KEY_SCORE, user.getScore());
         editor.putString(Const.KEY_CURRENT_USER_DOCUMENT, currentUserDocument);
         editor.commit();
-
-        // get avatar from cloud storage
-        StorageReference rootRef = FirebaseStorage.getInstance().getReference();
-        StorageReference imgStorageRef = rootRef.child(user.getAvatarRef());
-        imgStorageRef.getBytes(Const.MAX_DOWNLOAD_FILE_BYTE)
-                .addOnSuccessListener(bytes -> {
-                    Bitmap avatarBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-                    editor.putString(Const.KEY_CURRENT_USER_AVATAR_PATH,
-                            CommonLogic.saveImageToInternalStorage
-                                    (avatarBitmap, context.getApplicationContext(), Const.CURRENT_USER_AVATAR_FILE_NAME));
-                    editor.commit();
-                })
-                .addOnFailureListener(e -> CommonLogic.makeToast(context, "Error: " + e.getMessage()));
 
         // intent to HomeActivity
         Intent intent = new Intent(context, HomeActivity.class);
@@ -182,31 +165,28 @@ public class CommonLogic {
                 .addOnSuccessListener(documentReference -> {
                     FirebaseAuth mAuth = FirebaseAuth.getInstance();
                     mAuth.createUserWithEmailAndPassword(user.getEmail(), user.getPassword())
-                            .addOnCompleteListener((Activity) context, new OnCompleteListener<AuthResult>() {
-                                @Override
-                                public void onComplete(Task<AuthResult> task) {
-                                    if (task.isSuccessful()) {
-                                        // Sign up success
-                                        String currentUserDocument = documentReference.getId();
-                                        AlertDialog.Builder builder = new AlertDialog.Builder(context);
-                                        builder.setTitle("Whoohoo!");
-                                        builder.setMessage("Registered successfully!");
-                                        builder.setIcon(R.drawable.karo);
-                                        builder.setCancelable(false);
-                                        builder.setPositiveButton("Let's go",
-                                                (dialog, which) -> CommonLogic.gotoHomeScreen(context, user, currentUserDocument));
-                                        builder.show();
-                                    } else {
-                                        // If sign up fails, display a message to the user.
-                                        CommonLogic.makeToast(context, "Error: " + task.getException());
-                                    }
+                            .addOnCompleteListener((Activity) context, task -> {
+                                if (task.isSuccessful()) {
+                                    // Sign up success
+                                    String currentUserDocument = documentReference.getId();
+                                    AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                                    builder.setTitle("Whoohoo!");
+                                    builder.setMessage("Registered successfully!");
+                                    builder.setIcon(R.drawable.karo);
+                                    builder.setCancelable(false);
+                                    builder.setPositiveButton("Let's go",
+                                            (dialog, which) -> CommonLogic.gotoHomeScreen(context, user, currentUserDocument));
+                                    builder.show();
+                                } else {
+                                    // If sign up fails, display a message to the user.
+                                    CommonLogic.makeToast(context, "Error: " + task.getException());
                                 }
                             });
                 })
                 .addOnFailureListener(e -> CommonLogic.makeToast(context, "Error: " + e));
     }
 
-    public static String saveImageToInternalStorage(Bitmap bitmapImage, Context context, String imgName) {
+    public static void saveImageToInternalStorage(Bitmap bitmapImage, Context context, String imgName) {
         ContextWrapper contextWrapper = new ContextWrapper(context);
         // path to /data/data/<your_app>/app_images
         File directory = contextWrapper.getDir(Const.DIRECTORY_IMAGES, MODE_PRIVATE);
@@ -227,11 +207,31 @@ public class CommonLogic {
                 makeToast(context, "Error: " + e.getMessage());
             }
         }
-        return imgFile.getAbsolutePath();
     }
 
     public static Bitmap loadImageFromInternalStorage(String imagePath) {
         return BitmapFactory.decodeFile(imagePath);
+    }
+
+    public static void downloadAvatarList(Context context) {
+        FirebaseStorage storage = FirebaseStorage.getInstance();
+        StorageReference listRef = storage.getReference().child(Const.KEY_AVATARS_STORAGE);
+        listRef.listAll()
+                .addOnSuccessListener(listResult -> {
+                    for (StorageReference item : listResult.getItems()) {
+                        // All the items under listRef.
+                        item.getBytes(Const.MAX_DOWNLOAD_FILE_BYTE)
+                                .addOnSuccessListener(bytes -> {
+                                    Bitmap bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+                                    CommonLogic.saveImageToInternalStorage(bitmap, context, item.getName());
+                                })
+                                .addOnFailureListener(e -> CommonLogic.makeToast(context, "Error: " + e.getMessage()));
+                    }
+                })
+                .addOnFailureListener(e -> {
+                    // Uh-oh, an error occurred!
+                    CommonLogic.makeToast(context, "Error: " + e.getMessage());
+                });
     }
 
     public static void deleteRoom(Context context, String roomDocument) {

@@ -13,13 +13,13 @@
         android:roundIcon="@drawable/karo"
         android:supportsRtl="true"
         android:theme="@style/Theme.Karo">
-        <activity android:name=".MainActivity"/>
+        <activity android:name=".AvatarsActivity"></activity>
+        <activity android:name=".MainActivity" />
         <activity android:name=".RoomActivity" />
         <activity android:name=".EditProfileActivity" />
         <activity
             android:name=".HomeActivity"
             android:label="@string/title_activity_home" />
-
         <activity android:name=".SplashActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
