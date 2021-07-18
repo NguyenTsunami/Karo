@@ -292,6 +292,7 @@ public class RoomActivity extends AppCompatActivity {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         DocumentReference currentUserRef = db.collection(Const.COLLECTION_USERS).document(currentUserDocument);
         int newScore = currentUser.getScore() + extras;
+        currentUser.setScore(newScore);
         db.runTransaction((Transaction.Function<Void>) transaction -> {
             transaction.update(currentUserRef, Const.KEY_SCORE, newScore);
             return null;
