@@ -41,7 +41,6 @@ public class MainActivity extends AppCompatActivity {
     private ConstraintLayout layoutLoginModule;
     private Scene signInScene, signUpScene;
     private Context context = this;
-    private String currentUserDocument;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,7 +79,15 @@ public class MainActivity extends AppCompatActivity {
     private void setupSignUpView() {
         // Handle Sign Up
         btnSignUp = findViewById(R.id.btnSignUp);
-        btnSignUp.setOnClickListener(v -> handleSignUp());
+        btnSignUp.setOnClickListener(v -> {
+            EditText txtEmail = findViewById(R.id.txtEmail);
+            EditText txtPass = findViewById(R.id.txtPass);
+            CheckBox ckbTermsCheck = findViewById(R.id.ckbTermsCheck);
+            String email = txtEmail.getText().toString();
+            String password = txtPass.getText().toString();
+            boolean isAgreeWithTerms = ckbTermsCheck.isChecked();
+            CommonLogic.handleSignUp(this, email, password, isAgreeWithTerms);
+        });
 
         // Change Sign In Scene
         txtSignInLink = findViewById(R.id.txtSignInLink);
@@ -131,85 +138,4 @@ public class MainActivity extends AppCompatActivity {
         getWindow().setExitTransition(slide);
     }
 
-    public static boolean isEmailValid(String email) {
-        String expression = "^[\\w\\.-]+@([\\w\\-]+\\.)+[A-Z]{2,4}$";
-        Pattern pattern = Pattern.compile(expression, Pattern.CASE_INSENSITIVE);
-        Matcher matcher = pattern.matcher(email);
-        return matcher.matches();
-    }
-
-    private void handleSignUp() {
-        // Get data
-        EditText txtEmail = findViewById(R.id.txtEmail);
-        EditText txtPass = findViewById(R.id.txtPass);
-        String email = txtEmail.getText().toString();
-        String password = txtPass.getText().toString();
-        CheckBox ckbTermsCheck = findViewById(R.id.ckbTermsCheck);
-
-        // Check validation
-        if (!isEmailValid(email)) {
-            CommonLogic.makeToast(this, "Please fill in a valid email address!");
-            return;
-        }
-        if (password.equals("")) {
-            CommonLogic.makeToast(this, "Please fill in password!");
-            return;
-        }
-        if (!ckbTermsCheck.isChecked()) {
-            CommonLogic.makeToast(this, "Please agrees with terms before sign up an account!");
-            return;
-        }
-
-        // Arrange data
-        User user = new User(email, password, Const.DEFAULT_USERNAME, Const.DEFAULT_AVATAR_REF, Const.DEFAULT_SCORE);
-
-        // Check existence
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-        db.collection(Const.COLLECTION_USERS)
-                .whereEqualTo(Const.KEY_EMAIL, email)
-                .get()
-                .addOnCompleteListener(task -> {
-                    if (task.isSuccessful()) {
-                        QuerySnapshot querySnapshot = task.getResult();
-                        int numberOfAccHasEmail = querySnapshot != null ? querySnapshot.size() : 0;
-                        if (numberOfAccHasEmail > 0) {
-                            CommonLogic.makeToast(this, "This email has already registered. Please choose another email");
-                        } else {
-                            signUpAccount(user);
-                        }
-                    } else {
-                        CommonLogic.makeToast(this, "Error: " + task.getException());
-                    }
-                });
-    }
-
-    private void signUpAccount(User user) {
-        FirebaseFirestore db = FirebaseFirestore.getInstance();
-        db.collection(Const.COLLECTION_USERS).add(user)
-                .addOnSuccessListener(documentReference -> {
-                    FirebaseAuth mAuth = FirebaseAuth.getInstance();
-                    mAuth.createUserWithEmailAndPassword(user.getEmail(), user.getPassword())
-                            .addOnCompleteListener(this, new OnCompleteListener<AuthResult>() {
-                                @Override
-                                public void onComplete(Task<AuthResult> task) {
-                                    if (task.isSuccessful()) {
-                                        // Sign up success
-                                        currentUserDocument = documentReference.getId();
-                                        AlertDialog.Builder builder = new AlertDialog.Builder(context);
-                                        builder.setTitle("Whoohoo!");
-                                        builder.setMessage("Registered successfully!");
-                                        builder.setIcon(R.drawable.karo);
-                                        builder.setCancelable(false);
-                                        builder.setPositiveButton("Let's go",
-                                                (dialog, which) -> CommonLogic.gotoHomeScreen(getApplicationContext(), user, currentUserDocument));
-                                        builder.show();
-                                    } else {
-                                        // If sign up fails, display a message to the user.
-                                        CommonLogic.makeToast(getApplicationContext(), "Error: " + task.getException());
-                                    }
-                                }
-                            });
-                })
-                .addOnFailureListener(e -> CommonLogic.makeToast(this, "Error: " + e));
-    }
 }

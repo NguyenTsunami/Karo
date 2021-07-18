@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -46,6 +47,7 @@ public class RoomsFragment extends Fragment implements ISendStateToRoom {
     private ListenerRegistration listenerRegistration;
     private RoomsAdapter adapter;
     private RecyclerView rcvRooms;
+    private Button btnCreateRoom;
 
     public View onCreateView(@NonNull LayoutInflater inflater,
                              ViewGroup container, Bundle savedInstanceState) {
@@ -57,6 +59,13 @@ public class RoomsFragment extends Fragment implements ISendStateToRoom {
 
         // get recycler view
         rcvRooms = root.findViewById(R.id.rcvRooms);
+
+        // setup button new room
+        btnCreateRoom = root.findViewById(R.id.btnCreateRoom);
+        btnCreateRoom.setOnClickListener(v -> {
+            // create new room
+            CommonLogic.createRoom(getContext(), currentUser.getEmail());
+        });
 
         return root;
     }

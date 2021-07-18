@@ -7,11 +7,19 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.os.Bundle;
+import android.widget.CheckBox;
+import android.widget.EditText;
 import android.widget.Toast;
+
+import androidx.appcompat.app.AlertDialog;
 
 import com.example.karo.HomeActivity;
 import com.example.karo.MainActivity;
+import com.example.karo.R;
+import com.example.karo.RoomActivity;
 import com.example.karo.model.Cell;
+import com.example.karo.model.Room;
 import com.example.karo.model.User;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
@@ -30,6 +38,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static android.content.Context.MODE_PRIVATE;
 
@@ -121,6 +131,81 @@ public class CommonLogic {
         context.startActivity(intent);
     }
 
+    public static boolean isEmailValid(String email) {
+        String expression = "^[\\w\\.-]+@([\\w\\-]+\\.)+[A-Z]{2,4}$";
+        Pattern pattern = Pattern.compile(expression, Pattern.CASE_INSENSITIVE);
+        Matcher matcher = pattern.matcher(email);
+        return matcher.matches();
+    }
+
+    public static void handleSignUp(Context context, String email, String password, boolean isAgreeWithTerms) {
+        // Check validation
+        if (!isEmailValid(email)) {
+            CommonLogic.makeToast(context, "Please fill in a valid email address!");
+            return;
+        }
+        if (password.equals("")) {
+            CommonLogic.makeToast(context, "Please fill in password!");
+            return;
+        }
+        if (!isAgreeWithTerms) {
+            CommonLogic.makeToast(context, "Please agrees with terms before sign up an account!");
+            return;
+        }
+
+        // Arrange data
+        User user = new User(email, password, Const.DEFAULT_USERNAME, Const.DEFAULT_AVATAR_REF, Const.DEFAULT_SCORE);
+
+        // Check existence
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        db.collection(Const.COLLECTION_USERS)
+                .whereEqualTo(Const.KEY_EMAIL, email)
+                .get()
+                .addOnCompleteListener(task -> {
+                    if (task.isSuccessful()) {
+                        QuerySnapshot querySnapshot = task.getResult();
+                        int numberOfAccHasEmail = querySnapshot != null ? querySnapshot.size() : 0;
+                        if (numberOfAccHasEmail > 0) {
+                            CommonLogic.makeToast(context, "This email has already registered. Please choose another email");
+                        } else {
+                            signUpAccount(context, user);
+                        }
+                    } else {
+                        CommonLogic.makeToast(context, "Error: " + task.getException());
+                    }
+                });
+    }
+
+    public static void signUpAccount(Context context, User user) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        db.collection(Const.COLLECTION_USERS).add(user)
+                .addOnSuccessListener(documentReference -> {
+                    FirebaseAuth mAuth = FirebaseAuth.getInstance();
+                    mAuth.createUserWithEmailAndPassword(user.getEmail(), user.getPassword())
+                            .addOnCompleteListener((Activity) context, new OnCompleteListener<AuthResult>() {
+                                @Override
+                                public void onComplete(Task<AuthResult> task) {
+                                    if (task.isSuccessful()) {
+                                        // Sign up success
+                                        String currentUserDocument = documentReference.getId();
+                                        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+                                        builder.setTitle("Whoohoo!");
+                                        builder.setMessage("Registered successfully!");
+                                        builder.setIcon(R.drawable.karo);
+                                        builder.setCancelable(false);
+                                        builder.setPositiveButton("Let's go",
+                                                (dialog, which) -> CommonLogic.gotoHomeScreen(context, user, currentUserDocument));
+                                        builder.show();
+                                    } else {
+                                        // If sign up fails, display a message to the user.
+                                        CommonLogic.makeToast(context, "Error: " + task.getException());
+                                    }
+                                }
+                            });
+                })
+                .addOnFailureListener(e -> CommonLogic.makeToast(context, "Error: " + e));
+    }
+
     public static String saveImageToInternalStorage(Bitmap bitmapImage, Context context, String imgName) {
         ContextWrapper contextWrapper = new ContextWrapper(context);
         // path to /data/data/<your_app>/app_images
@@ -145,6 +230,10 @@ public class CommonLogic {
         return imgFile.getAbsolutePath();
     }
 
+    public static Bitmap loadImageFromInternalStorage(String imagePath) {
+        return BitmapFactory.decodeFile(imagePath);
+    }
+
     public static void deleteRoom(Context context, String roomDocument) {
         FirebaseFirestore db = FirebaseFirestore.getInstance();
         db.collection(Const.COLLECTION_ROOMS).document(roomDocument)
@@ -155,8 +244,22 @@ public class CommonLogic {
                 .addOnFailureListener(e -> makeToast(context, "Error: " + e.getMessage()));
     }
 
-    public static Bitmap loadImageFromInternalStorage(String imagePath) {
-        return BitmapFactory.decodeFile(imagePath);
+    public static void createRoom(Context context, String currentUserEmail) {
+        // create new room
+        Room room = new Room(currentUserEmail, null,
+                Const.PLAYER_STATE_JOIN_ROOM, Const.PLAYER_STATE_NONE);
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        db.collection(Const.COLLECTION_ROOMS).add(room)
+                .addOnSuccessListener(documentReference -> {
+                    String roomDocument = documentReference.getId();
+                    Intent intent = new Intent(context, RoomActivity.class);
+                    Bundle bundle = new Bundle();
+                    bundle.putString(Const.KEY_ROOM_DOCUMENT, roomDocument);
+                    intent.putExtras(bundle);
+                    intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    context.startActivity(intent);
+                })
+                .addOnFailureListener(e -> CommonLogic.makeToast(context, "Error: " + e));
     }
 
     public static void makeToast(Context context, String string) {

@@ -90,19 +90,7 @@ public class RanksAdapter extends RecyclerView.Adapter<RanksAdapter.ViewHolder> 
                 @Override
                 public void onClick(View v) {
                     // create new room
-                    Room room = new Room(currentUserEmail, null,
-                            Const.PLAYER_STATE_JOIN_ROOM, Const.PLAYER_STATE_NONE);
-                    FirebaseFirestore db = FirebaseFirestore.getInstance();
-                    db.collection(Const.COLLECTION_ROOMS).add(room)
-                            .addOnSuccessListener(documentReference -> {
-                                String roomDocument = documentReference.getId();
-                                Intent intent = new Intent(itemView.getContext(), RoomActivity.class);
-                                Bundle bundle = new Bundle();
-                                bundle.putString(Const.KEY_ROOM_DOCUMENT, roomDocument);
-                                intent.putExtras(bundle);
-                                itemView.getContext().startActivity(intent);
-                            })
-                            .addOnFailureListener(e -> CommonLogic.makeToast(itemView.getContext(), "Error: " + e));
+                    CommonLogic.createRoom(itemView.getContext(), currentUserEmail);
                 }
             });
         }

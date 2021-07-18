@@ -61,6 +61,7 @@ public class RoomActivity extends AppCompatActivity {
     private int opponentUserState;
     private Room room;
     private String roomDocument;
+    private String currentUserDocument;
     private ListenerRegistration roomListenerRegistration;
     private GameBoardAdapter gameBoardAdapter;
 
@@ -136,6 +137,9 @@ public class RoomActivity extends AppCompatActivity {
 
         // upload username
         txtCurrentPlayerName.setText(currentUser.getUsername());
+
+        // Get current user document
+        currentUserDocument = prefs.getString(Const.KEY_CURRENT_USER_DOCUMENT, "");
     }
 
     private void sendState(int state) {
@@ -252,6 +256,7 @@ public class RoomActivity extends AppCompatActivity {
 
         if (whoseTurn.equals(Const.TOKEN_X)
                 && currentUser.getEmail().equals(room.getPlayerRoleXEmail())) {
+            updateScore(Const.WIN_SCORE_EARN);
             builder.setTitle("Whoohoo!");
             builder.setMessage("You won!");
         } else if (whoseTurn.equals(Const.TOKEN_X)
@@ -264,6 +269,7 @@ public class RoomActivity extends AppCompatActivity {
             builder.setMessage("You lose!");
         } else if (whoseTurn.equals(Const.TOKEN_O)
                 && currentUser.getEmail().equals(room.getPlayerRoleOEmail())) {
+            updateScore(Const.WIN_SCORE_EARN);
             builder.setTitle("Whoohoo!");
             builder.setMessage("You won!");
         }
@@ -273,6 +279,18 @@ public class RoomActivity extends AppCompatActivity {
             sendState(Const.PLAYER_STATE_JOIN_ROOM);
         });
         builder.show();
+    }
+
+    private void updateScore(int extras) {
+        FirebaseFirestore db = FirebaseFirestore.getInstance();
+        DocumentReference currentUserRef = db.collection(Const.COLLECTION_USERS).document(currentUserDocument);
+        int newScore = currentUser.getScore() + extras;
+        db.runTransaction((Transaction.Function<Void>) transaction -> {
+            transaction.update(currentUserRef, Const.KEY_SCORE, newScore);
+            return null;
+        }).addOnSuccessListener(aVoid -> {
+        }).addOnFailureListener(e ->
+                CommonLogic.makeToast(this, "Update score failure: " + e.getMessage()));
     }
 
     private void sendIndexNotifyNewBoardGame() {
