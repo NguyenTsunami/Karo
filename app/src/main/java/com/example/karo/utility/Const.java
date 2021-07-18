@@ -45,4 +45,5 @@ public class Const {
     public static final int ADAPTER_STATE_REMOVED_DATA = -1;
     public static final int ADAPTER_STATE_CHANGED_DATA = 0;
     public static final int WIN_SCORE_EARN = 10;
+    public static final String IMG_PICKED_REF = "imgPickRef";
 }

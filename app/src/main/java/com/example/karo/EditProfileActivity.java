@@ -138,7 +138,14 @@ public class EditProfileActivity extends AppCompatActivity {
         if (resultCode == RESULT_OK) {
             if (requestCode == Const.REQUEST_CHANGE_AVATAR) {
                 // get avatarRef that user picked
-                // isChangeAvatar = false/true;
+                String imgPickedRef = data.getStringExtra(Const.IMG_PICKED_REF);
+                if (imgPickedRef != null && !imgPickedRef.equals(currentUser.getAvatarRef())) {
+                    isChangeAvatar = true;
+                    avatarRefPicked = imgPickedRef;
+                    Bitmap bitmap = CommonLogic.loadImageFromInternalStorage(
+                            Const.AVATARS_SOURCE_INTERNAL_PATH + avatarRefPicked);
+                    imgCurrentAvatar.setImageBitmap(bitmap);
+                }
             }
         }
         super.onActivityResult(requestCode, resultCode, data);

@@ -9,19 +9,22 @@ import android.widget.ImageButton;
 import android.widget.ImageView;
 
 import com.example.karo.R;
+import com.example.karo.model.Avatar;
 import com.example.karo.model.Cell;
 
 import java.util.ArrayList;
 
 public class AvatarsAdapter extends BaseAdapter {
 
-    ArrayList<Bitmap> avatars;
+    ArrayList<Avatar> avatars;
+    IPickedAvatar iPickedAvatar;
 
-    public AvatarsAdapter(ArrayList<Bitmap> avatars) {
+    public AvatarsAdapter(ArrayList<Avatar> avatars, IPickedAvatar iPickedAvatar) {
         this.avatars = avatars;
+        this.iPickedAvatar = iPickedAvatar;
     }
 
-    public void updateData(ArrayList<Bitmap> avatars) {
+    public void updateData(ArrayList<Avatar> avatars) {
         this.avatars = avatars;
         notifyDataSetChanged();
     }
@@ -53,16 +56,29 @@ public class AvatarsAdapter extends BaseAdapter {
             avatarView = (AvatarView) convertView.getTag();
         }
         // get data
-        Bitmap bitmap = avatars.get(position);
+        Bitmap bitmap = avatars.get(position).getBitmap();
         avatarView.imgAvatarItem.setImageBitmap(bitmap);
+        avatarView.avatarRef = avatars.get(position).getRef();
         return convertView;
+    }
+
+    public interface IPickedAvatar {
+        void setImagePickedRef(String imgPickedRef);
     }
 
     public class AvatarView {
         ImageButton imgAvatarItem;
+        String avatarRef;
 
         public AvatarView(View itemView) {
             this.imgAvatarItem = itemView.findViewById(R.id.imgAvatarItem);
+
+            imgAvatarItem.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    iPickedAvatar.setImagePickedRef(avatarRef);
+                }
+            });
         }
     }
 }
